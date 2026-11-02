@@ -24,10 +24,15 @@ Terminal web estatica con datos reales de mercado y nueve agentes con tareas con
 
 - CoinGecko: `coins/markets` y `coins/{id}/ohlc` (sin clave, con limite gratuito; si responde 429, la app muestra el error y no inventa datos).
 - Alternative.me: indice de Miedo y Codicia.
+- cryptocurrency.cv: titulares de noticias sin clave (version gratis, 3 por categoria).
 
 ## Titulares de noticias
 
-CryptoCompare exige una clave para su endpoint de noticias (verificado: sin clave responde 401 y sin datos). Por eso la app no muestra titulares inventados. Si el usuario tiene una clave, puede escribirla en Configuracion: queda solo en el `localStorage` de su navegador, nunca se sube al repositorio ni se envia a otro servidor que no sea CryptoCompare.
+Fuente principal sin clave: `cryptocurrency.cv/api/news` (verificado: responde JSON con titulo, enlace, fuente y fecha, sin registro; la version gratis devuelve 3 articulos por categoria, por eso la app consulta bitcoin, ethereum y defi, filtra el rastreador de gas y duplicados, y muestra hasta 8 titulares ordenados por fecha). Es un agregador de terceros: cada titular enlaza a su fuente original, que es la que hay que abrir antes de actuar.
+
+Segunda fuente opcional: CryptoCompare exige una clave para su endpoint de noticias (verificado: sin clave responde 401 y sin datos). Si el usuario tiene una clave, puede escribirla en Configuracion: queda solo en el `localStorage` de su navegador, nunca se sube al repositorio ni se envia a otro servidor que no sea CryptoCompare.
+
+Si ambas fuentes fallan, la app no inventa titulares: muestra los catalizadores reales (los movimientos 24h mas fuertes del universo monitoreado).
 
 ## Publicar en GitHub Pages
 

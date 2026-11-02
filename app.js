@@ -45,6 +45,17 @@ function fmtCompact(v) {
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+/* Filtro de noticias: quita el rastreador de gas y duplicados, ordena por fecha. */
+function filterNewsArticles(articles) {
+  const seen = new Set();
+  return (articles || []).filter((a) => {
+    if (!a || !a.link || !a.title) return false;
+    if (a.sourceKey === "etherscan_gas" || /ETH Gas/i.test(a.title)) return false;
+    if (seen.has(a.link)) return false;
+    seen.add(a.link);
+    return true;
+  }).sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
+}
 
 /* ---------- Indicadores puros (probables en Node) ---------- */
 function ema(values, period) {
@@ -156,7 +167,7 @@ function positionFor(capital, riskPct, price, atrVal) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { ema, rsi, atr, macd, maxDrawdown, backtestEmaCross, scoreAsset, positionFor, fmtUSD, fmtPct };
+  module.exports = { ema, rsi, atr, macd, maxDrawdown, backtestEmaCross, scoreAsset, positionFor, fmtUSD, fmtPct, filterNewsArticles };
 }
 
 /* ---------- App en el navegador ---------- */
@@ -236,7 +247,7 @@ if (typeof document !== "undefined") {
       positivePct: state.markets.length ? positives / state.markets.length * 100 : null,
     };
 
-    /* Agente 2 - News Hunter: sin clave no inventa titulares */
+    /* Agente 2 - News Hunter: titulares reales sin clave, catalizadores de respaldo */
     const catalysts = [...eligible].sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0)).slice(0, 5);
 
     /* Agente 9 - Trade Auditor */
@@ -253,7 +264,7 @@ if (typeof document !== "undefined") {
 
     state.agents = [
       { n: "01", name: "Crypto Scanner", icon: "⌕", task: "Filtrar el universo por volumen real", out: eligible.length + " activos con volumen 24h ≥ $150M, ordenados por volumen. Mayor volumen: " + (eligible[0] ? eligible[0].symbol.toUpperCase() + " (" + fmtCompact(eligible[0].total_volume) + ")" : "-") + "." },
-      { n: "02", name: "News Hunter", icon: "▤", task: "Detectar movimientos inusuales; titulares solo con clave", out: settings.newsKey ? "Clave guardada solo en tu navegador: se intentan titulares de CryptoCompare en la vista News." : "Sin clave de noticias: no se muestran titulares inventados. Se listan los 5 movimientos 24h mas fuertes como posibles catalizadores a verificar." },
+      { n: "02", name: "News Hunter", icon: "▤", task: "Titulares reales sin clave + catalizadores", out: "Fuente principal: cryptocurrency.cv sin clave (titulares de CoinDesk, The Block, Cointelegraph y otros, filtrados y con enlace a la fuente original)." + (settings.newsKey ? " CryptoCompare queda como segunda fuente con tu clave, solo en tu navegador." : " Sin clave de CryptoCompare: los catalizadores reales quedan como respaldo si la fuente principal falla.") },
       { n: "03", name: "Technical Analyst", icon: "⌁", task: "RSI, EMA20, MACD y ATR con velas 4h (7 dias)", out: enriched.filter((a) => a.tech).length + " de " + enriched.length + " activos con indicadores calculados. Sin velas suficientes, el activo queda sin indicador, no con un valor inventado." },
       { n: "04", name: "Market Sentiment", icon: "◉", task: "Miedo y Codicia, peso de BTC y activos en positivo", out: sentiment.fng ? "Miedo y Codicia: " + sentiment.fng.value + " (" + (FNG_LABEL[sentiment.fng.classification] || sentiment.fng.classification) + ")." : "Indice de Miedo y Codicia no disponible en esta carga." },
       { n: "05", name: "Quant Analyst", icon: "∑", task: "Retorno, volatilidad, caida maxima y cruce EMA20", out: "Estadisticas descriptivas de las velas 4h de 7 dias en la vista Performance. No son una promesa de rendimiento futuro." },
@@ -312,16 +323,36 @@ if (typeof document !== "undefined") {
   async function loadNews() {
     const settings = getSettings();
     const el = $("#newsList"); if (!el) return;
-    if (!settings.newsKey) { el.innerHTML = "<p class=\"muted\">Titulares desactivados: CryptoCompare exige una clave. Puedes agregarla en Configuracion; queda solo en tu navegador. Mientras tanto, usa la lista de catalizadores de la izquierda.</p>"; return; }
     el.innerHTML = "<p class=\"muted\">Cargando titulares…</p>";
+    /* 1) Fuente principal sin clave: cryptocurrency.cv (3 por categoria en la version gratis). */
     try {
-      const data = await fetchJSON("https://min-api.cryptocompare.com/data/v2/news/?lang=EN&api_key=" + encodeURIComponent(settings.newsKey));
-      const items = (data && data.Data) || [];
-      if (!items.length) { el.innerHTML = "<p class=\"muted\">La fuente no devolvio titulares con esa clave.</p>"; return; }
-      el.innerHTML = items.slice(0, 8).map((n) => `<div class="activity"><div class="activity-icon purple">▤</div><div><strong><a href="${esc(n.url)}" target="_blank" rel="noopener" style="color:#dce5f0">${esc(n.title)}</a></strong><p>${esc(n.source || "")} · ${n.published_on ? new Date(n.published_on * 1000).toLocaleString("es-DO") : ""}</p></div></div>`).join("");
-    } catch (e) {
-      el.innerHTML = "<p class=\"muted\">No se pudieron cargar titulares con esa clave. Revisa la clave en Configuracion o vuelve a los catalizadores.</p>";
+      const collected = [];
+      for (const cat of ["bitcoin", "ethereum", "defi"]) {
+        try {
+          const data = await fetchJSON("https://cryptocurrency.cv/api/news?category=" + cat);
+          (data && data.articles || []).forEach((a) => collected.push(a));
+        } catch (e) { /* una categoria puede fallar; se sigue con las demas */ }
+        await sleep(200);
+      }
+      const items = filterNewsArticles(collected).slice(0, 8);
+      if (items.length) {
+        el.innerHTML = items.map((n) => `<div class="activity"><div class="activity-icon purple">▤</div><div><strong><a href="${esc(n.link)}" target="_blank" rel="noopener" style="color:#dce5f0">${esc(n.title)}</a></strong><p>${esc(n.source || "")} · ${n.pubDate ? new Date(n.pubDate).toLocaleString("es-DO") : ""}</p></div></div>`).join("") + "<p class=\"data-note\" style=\"margin-top:12px\">Fuente: cryptocurrency.cv (agregador, sin clave). Abre siempre la fuente original antes de actuar.</p>";
+        return;
+      }
+    } catch (e) { /* cae al respaldo siguiente */ }
+    /* 2) Segunda fuente, solo si el usuario puso su clave (queda en su navegador). */
+    if (settings.newsKey) {
+      try {
+        const data = await fetchJSON("https://min-api.cryptocompare.com/data/v2/news/?lang=EN&api_key=" + encodeURIComponent(settings.newsKey));
+        const items = (data && data.Data) || [];
+        if (items.length) {
+          el.innerHTML = items.slice(0, 8).map((n) => `<div class="activity"><div class="activity-icon purple">▤</div><div><strong><a href="${esc(n.url)}" target="_blank" rel="noopener" style="color:#dce5f0">${esc(n.title)}</a></strong><p>${esc(n.source || "")} · ${n.published_on ? new Date(n.published_on * 1000).toLocaleString("es-DO") : ""}</p></div></div>`).join("");
+          return;
+        }
+      } catch (e) { /* cae al respaldo final */ }
     }
+    /* 3) Respaldo: no inventar titulares; usar los catalizadores reales. */
+    el.innerHTML = "<p class=\"muted\">No se pudieron cargar titulares en este momento. Usa la lista de catalizadores de la izquierda: son los movimientos reales mas fuertes del universo monitoreado.</p>";
   }
 
   async function loadAll() {
@@ -334,7 +365,8 @@ if (typeof document !== "undefined") {
       state.markets = markets;
       try {
         const fng = await fetchJSON("https://api.alternative.me/fng/?limit=1");
-        state.fng = fng && fng.data && fng.data[0] ? fng.data[0] : null;
+        /* Alternative.me usa value_classification, no classification. */
+        state.fng = fng && fng.data && fng.data[0] ? { value: fng.data[0].value, classification: fng.data[0].value_classification } : null;
       } catch (e) { state.fng = null; }
       state.tech = {};
       for (const u of UNIVERSE) {

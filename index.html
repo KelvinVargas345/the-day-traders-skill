@@ -94,7 +94,7 @@
         <div class="view" id="view-news">
           <div class="section-grid">
             <div class="panel"><div class="panel-header"><div><div class="panel-kicker">NEWS HUNTER · AGENTE 02</div><h2>Catalizadores reales</h2><p class="muted">Movimientos 24h mas fuertes. No se inventan titulares.</p></div></div><div class="activity-list" id="catalystList"></div></div>
-            <div class="panel"><div class="panel-header"><div><div class="panel-kicker">TITULARES</div><h2>News center</h2></div></div><div class="activity-list" id="newsList"></div><p class="data-note" style="margin-top:14px">CryptoCompare exige clave para titulares. Si agregas una en Configuracion, queda solo en tu navegador y nunca se sube al repositorio.</p></div>
+            <div class="panel"><div class="panel-header"><div><div class="panel-kicker">TITULARES</div><h2>News center</h2></div></div><div class="activity-list" id="newsList"></div><p class="data-note" style="margin-top:14px">Fuente principal sin clave: cryptocurrency.cv. CryptoCompare es opcional con tu clave, solo en tu navegador, y nunca se sube al repositorio.</p></div>
           </div>
         </div>
 
@@ -112,7 +112,7 @@
             <div class="settings-form">
               <label>Capital demo (USD)<input id="capitalInput" type="number" min="1" step="100"></label>
               <label>Riesgo por operacion (%)<input id="riskInput" type="number" min="0.1" max="10" step="0.1"></label>
-              <label style="grid-column:1/-1">Clave opcional de CryptoCompare para titulares (solo en tu navegador)<input id="newsKeyInput" type="password" placeholder="Dejar vacio si no tienes clave"></label>
+              <label style="grid-column:1/-1">Clave opcional de CryptoCompare como segunda fuente de titulares (solo en tu navegador; la fuente principal ya funciona sin clave)<input id="newsKeyInput" type="password" placeholder="Dejar vacio si no tienes clave"></label>
             </div>
             <div style="margin-top:16px"><button class="button primary" id="saveSettingsBtn">Guardar en este navegador</button></div>
             <div class="security-note" style="margin-top:16px"><strong>Seguridad</strong><p>Esta version no pide claves de Binance ni de ningun exchange, no ejecuta ordenes y no tiene backend. Los datos publicos de CoinGecko y Alternative.me no requieren clave. Si en una etapa futura se conecta una cuenta, debe ser con API de solo lectura y secretos solo en backend, nunca en una pagina estatica.</p></div>
