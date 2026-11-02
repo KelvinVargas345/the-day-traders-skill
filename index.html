@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08111f">
+  <title>The Day Traders Skill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .live-badge{background:#15382f;color:#31d49a;font:9px 'DM Mono';padding:4px 7px;border-radius:5px}
+    .error-banner{display:none;background:#3a1d24;border:1px solid #7a2e3a;color:#f3c2c9;border-radius:8px;padding:11px 13px;font-size:11px;line-height:1.6;margin-bottom:15px}
+    .data-note{font-size:10px;color:#91a0b5;line-height:1.6}
+    .settings-form input{background:#0c1726;border:1px solid #293b53;color:#dce5f0;padding:10px;border-radius:6px;font:10px Manrope;outline:none;width:100%}
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">D<span>•</span></div>
+        <div><strong>THE DAY TRADERS</strong><small>SKILL TERMINAL</small></div>
+      </div>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav>
+        <button class="nav-item active" data-view="overview"><span>◫</span> Dashboard</button>
+        <button class="nav-item" data-view="scanner"><span>⌕</span> Market scanner</button>
+        <button class="nav-item" data-view="signals"><span>⌁</span> Trading signals</button>
+        <button class="nav-item" data-view="agents"><span>◎</span> AI Skills</button>
+        <button class="nav-item" data-view="news"><span>▤</span> News center</button>
+        <button class="nav-item" data-view="risk"><span>◇</span> Risk management</button>
+        <button class="nav-item" data-view="performance"><span>▥</span> Performance</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="connection-card">
+          <div class="connection-head"><span class="pulse"></span> <span id="statusText">Cargando datos reales…</span></div>
+          <p id="lastUpdated">Sin datos aun</p>
+          <p class="data-note">Fuentes: CoinGecko (precios y velas) y Alternative.me (Miedo y Codicia). Sin claves en el codigo.</p>
+        </div>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Configuración</button>
+        <div class="user-mini"><div class="avatar">DT</div><div><strong>Trader workspace</strong><small>Datos reales · sin cuenta conectada</small></div><span class="more">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu">☰</button>
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="pageTitle">Dashboard</strong></div>
+        <div class="top-actions">
+          <div class="market-status">DATOS REALES <b>COIN-GECKO</b></div>
+          <button class="icon-btn" id="refreshBtn" title="Actualizar">↻</button>
+          <div class="avatar">DT</div>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="error-banner" id="errorBanner"></div>
+        <div class="page-heading">
+          <div><div class="eyebrow">MONITOR DE MERCADO <span class="live-badge">● EN VIVO</span></div><h1 id="heading">Market overview</h1><p id="subheading">Precios reales, agentes y senales en un solo lugar.</p></div>
+          <div class="heading-actions"><button class="button secondary" data-goto="signals">☆ Senales</button><button class="button primary" id="scanBtn"><span>⌕</span> Actualizar y escanear</button></div>
+        </div>
+
+        <div class="demo-banner"><span>ⓘ</span><div><strong>Datos reales, no asesoria financiera</strong> — Los precios y las velas son reales. Las senales son reglas transparentes (RSI, EMA, MACD, ATR) calculadas aqui, no recomendaciones de compra o venta. No conectes claves de exchange con permisos de trading o retiros.</div><button id="dismissBanner">×</button></div>
+
+        <div class="view active" id="view-overview">
+          <div class="metric-grid">
+            <div class="metric-card"><div class="metric-label">BTC / USDT <span>₿</span></div><div class="metric-value" id="metricBtc">-</div><div class="metric-foot">Precio actual en USD (CoinGecko)</div></div>
+            <div class="metric-card"><div class="metric-label">Volumen 24h universo <span>▤</span></div><div class="metric-value" id="metricVolume">-</div><div class="metric-foot">Suma de los 9 activos monitoreados</div></div>
+            <div class="metric-card"><div class="metric-label">Activos en positivo 24h <span>↗</span></div><div class="metric-value" id="metricPositive">-</div><div class="metric-foot">De 9 activos monitoreados</div></div>
+            <div class="metric-card"><div class="metric-label">Miedo y Codicia <span>◉</span></div><div class="metric-value" id="metricFng">-</div><div class="metric-foot">Indice Alternative.me</div></div>
+          </div>
+          <div class="section-grid">
+            <div class="panel chart-panel"><div class="panel-header"><div><div class="panel-kicker">BTC / USDT · VELAS 4H · 7 DIAS</div><h2>Grafico real</h2></div><span class="live-badge">COIN-GECKO</span></div><div class="chart-wrap"><canvas id="marketChart"></canvas></div></div>
+            <div class="panel"><div class="panel-header"><div><div class="panel-kicker">TOP POR VOLUMEN</div><h2>Activos principales</h2></div><button class="button secondary" data-goto="scanner">Ver scanner</button></div><div class="table-wrap"><table><thead><tr><th>Activo</th><th>Precio</th><th>24h</th><th>Volumen</th><th>Score</th></tr></thead><tbody id="topAssets"></tbody></table></div></div>
+          </div>
+        </div>
+
+        <div class="view" id="view-scanner">
+          <div class="panel"><div class="panel-header"><div><div class="panel-kicker">CRYPTO SCANNER · AGENTE 01</div><h2>Market scanner</h2><p class="muted">Universo real filtrado por volumen 24h ≥ $150M. RSI y EMA20 con velas 4h de 7 dias.</p></div><button class="button primary" id="scannerRun">↻ Actualizar</button></div><div class="table-wrap"><table><thead><tr><th>Activo</th><th>Precio</th><th>24h</th><th>Volumen</th><th>Rango 24h</th><th>RSI</th><th>Tendencia</th><th>Score</th></tr></thead><tbody id="scannerRows"></tbody></table></div></div>
+        </div>
+
+        <div class="view" id="view-signals">
+          <div class="panel"><div class="panel-header"><div><div class="panel-kicker">ENTRY SNIPER · AGENTE 06</div><h2>Trading signals</h2><p class="muted">Una senal es CONFIRMADA solo con 4/4 condiciones: precio sobre EMA20, RSI 40-70, MACD sobre su senal y volumen sobre la mediana del universo.</p></div></div><div class="signal-list" id="signalList"></div></div>
+        </div>
+
+        <div class="view" id="view-agents">
+          <div class="agent-intro"><div><div class="eyebrow">NUEVE AGENTES</div><h2>AI Skills</h2><p class="muted">Cada agente tiene una tarea concreta y un resultado verificable con los datos cargados.</p></div></div>
+          <div class="agent-grid" id="agentGrid"></div>
+        </div>
+
+        <div class="view" id="view-news">
+          <div class="section-grid">
+            <div class="panel"><div class="panel-header"><div><div class="panel-kicker">NEWS HUNTER · AGENTE 02</div><h2>Catalizadores reales</h2><p class="muted">Movimientos 24h mas fuertes. No se inventan titulares.</p></div></div><div class="activity-list" id="catalystList"></div></div>
+            <div class="panel"><div class="panel-header"><div><div class="panel-kicker">TITULARES</div><h2>News center</h2></div></div><div class="activity-list" id="newsList"></div><p class="data-note" style="margin-top:14px">CryptoCompare exige clave para titulares. Si agregas una en Configuracion, queda solo en tu navegador y nunca se sube al repositorio.</p></div>
+          </div>
+        </div>
+
+        <div class="view" id="view-risk">
+          <div class="panel"><div class="panel-header"><div><div class="panel-kicker">RISK GUARDIAN + EXIT STRATEGIST · AGENTES 07 Y 08</div><h2>Risk management</h2><p class="muted">Stop = precio − 1.5 × ATR · objetivo 2R = precio + 3 × ATR · tamano segun tu capital y riesgo en Configuracion.</p></div></div><div class="table-wrap"><table><thead><tr><th>Activo</th><th>Precio</th><th>Stop</th><th>Objetivo 2R</th><th>Tamano posicion</th><th>Exposicion</th></tr></thead><tbody id="riskRows"></tbody></table></div></div>
+        </div>
+
+        <div class="view" id="view-performance">
+          <div class="panel"><div class="panel-header"><div><div class="panel-kicker">QUANT ANALYST · AGENTE 05</div><h2>Performance</h2><p class="muted">Estadisticas de las velas 4h de 7 dias. El cruce EMA20 es descriptivo, no una garantia.</p></div></div><div class="table-wrap"><table><thead><tr><th>Activo</th><th>Retorno 7d</th><th>Volatilidad</th><th>Caida maxima</th><th>Cruce EMA20</th></tr></thead><tbody id="perfRows"></tbody></table></div></div>
+          <div class="panel" style="margin-top:14px"><div class="panel-header"><div><div class="panel-kicker">TRADE AUDITOR · AGENTE 09</div><h2>Auditoria de senales</h2><p id="auditSummary" class="muted">Sin senales registradas en este navegador.</p></div><button class="button secondary" id="clearAuditBtn">Borrar historial local</button></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Activo</th><th>Entrada</th><th>Actual</th><th>PnL</th></tr></thead><tbody id="auditRows"></tbody></table></div></div>
+        </div>
+
+        <div class="view" id="view-settings">
+          <div class="panel"><div class="panel-header"><div><div class="panel-kicker">CONFIGURACION LOCAL</div><h2>Configuración</h2><p class="muted">Todo esto se guarda solo en tu navegador. Nada de esto se sube a GitHub.</p></div></div>
+            <div class="settings-form">
+              <label>Capital demo (USD)<input id="capitalInput" type="number" min="1" step="100"></label>
+              <label>Riesgo por operacion (%)<input id="riskInput" type="number" min="0.1" max="10" step="0.1"></label>
+              <label style="grid-column:1/-1">Clave opcional de CryptoCompare para titulares (solo en tu navegador)<input id="newsKeyInput" type="password" placeholder="Dejar vacio si no tienes clave"></label>
+            </div>
+            <div style="margin-top:16px"><button class="button primary" id="saveSettingsBtn">Guardar en este navegador</button></div>
+            <div class="security-note" style="margin-top:16px"><strong>Seguridad</strong><p>Esta version no pide claves de Binance ni de ningun exchange, no ejecuta ordenes y no tiene backend. Los datos publicos de CoinGecko y Alternative.me no requieren clave. Si en una etapa futura se conecta una cuenta, debe ser con API de solo lectura y secretos solo en backend, nunca en una pagina estatica.</p></div>
+          </div>
+        </div>
+
+      </section>
+      <footer><span>THE DAY TRADERS SKILL · DATOS REALES · COINGECKO + ALTERNATIVE.ME</span><span>NO ES ASESORIA FINANCIERA</span></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
