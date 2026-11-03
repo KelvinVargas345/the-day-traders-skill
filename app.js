@@ -343,7 +343,12 @@ if (typeof document !== "undefined") {
     if (kicker && coin) kicker.textContent = coin.symbol.toUpperCase() + " / USDT · VELAS 4H · 7 DIAS";
     const tech = state.tech[coinId];
     const ohlc = tech ? tech.ohlc : null;
-    if (!ohlc) return;
+    const note = $("#chartNote" + slot);
+    if (!ohlc) {
+      if (note) note.textContent = "Sin velas para esta moneda en esta carga. Pulsa Actualizar para reintentar.";
+      return;
+    }
+    if (note) note.textContent = "";
     const values = ohlc.map((c) => c[4]);
     const max = Math.max.apply(null, values);
     /* Eje adaptativo: BTC se lee en miles, INJ y similares en dolares. */
@@ -409,9 +414,19 @@ if (typeof document !== "undefined") {
       } catch (e) { state.fng = null; }
       state.tech = {};
       for (const u of UNIVERSE) {
+        /* Reintentos con espera creciente: CoinGecko limita las consultas
+           rapidas y la moneda al final de la lista es la primera en fallar.
+           Antes, un fallo aqui dejaba al activo sin velas en silencio. */
+        let ohlc = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const data = await fetchJSON("https://api.coingecko.com/api/v3/coins/" + u.id + "/ohlc?vs_currency=usd&days=7");
+            if (data && data.length >= 30) { ohlc = data; break; }
+          } catch (e) { /* reintento abajo */ }
+          if (attempt < 2) await sleep(1500 * (attempt + 1));
+        }
         try {
-          const ohlc = await fetchJSON("https://api.coingecko.com/api/v3/coins/" + u.id + "/ohlc?vs_currency=usd&days=7");
-          if (ohlc && ohlc.length >= 30) {
+          if (ohlc) {
             const closes = ohlc.map((c) => c[4]);
             const e20 = ema(closes, 20);
             const rets = [];
@@ -425,8 +440,8 @@ if (typeof document !== "undefined") {
               volatility: vol, maxDd: maxDrawdown(closes), backtest: backtestEmaCross(closes),
             };
           }
-          await sleep(250);
-        } catch (e) { /* sin velas: el activo queda sin indicador, no se inventa */ }
+        } catch (e) { /* sin indicadores para este activo, no se inventa */ }
+        await sleep(500);
       }
       state.lastUpdated = new Date(); state.error = null;
       computeAll(); render(); loadNews();
