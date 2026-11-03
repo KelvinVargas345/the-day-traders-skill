@@ -412,11 +412,10 @@ if (typeof document !== "undefined") {
         /* Alternative.me usa value_classification, no classification. */
         state.fng = fng && fng.data && fng.data[0] ? { value: fng.data[0].value, classification: fng.data[0].value_classification } : null;
       } catch (e) { state.fng = null; }
-      state.tech = {};
-      for (const u of UNIVERSE) {
-        /* Reintentos con espera creciente: CoinGecko limita las consultas
-           rapidas y la moneda al final de la lista es la primera en fallar.
-           Antes, un fallo aqui dejaba al activo sin velas en silencio. */
+      /* Carga las velas de una moneda y calcula sus indicadores. Devuelve
+         true solo si la moneda quedo con velas; si no, el llamador decide
+         si reintentarla. Un fallo aqui nunca inventa datos. */
+      async function loadCoinTech(u) {
         let ohlc = null;
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
@@ -439,9 +438,30 @@ if (typeof document !== "undefined") {
               returnPct: (closes[closes.length - 1] / closes[0] - 1) * 100,
               volatility: vol, maxDd: maxDrawdown(closes), backtest: backtestEmaCross(closes),
             };
+            return true;
           }
         } catch (e) { /* sin indicadores para este activo, no se inventa */ }
+        return false;
+      }
+      state.tech = {};
+      /* Las dos monedas de los graficos van primero: lo visible no depende
+         de llegar al final de la cadena si una llamada falla en el camino. */
+      const chartFirst = [];
+      [chartCoin(1), chartCoin(2)].forEach((id) => {
+        const u = UNIVERSE.find((x) => x.id === id);
+        if (u && !chartFirst.includes(u)) chartFirst.push(u);
+      });
+      const ordered = [...chartFirst, ...UNIVERSE.filter((u) => !chartFirst.includes(u))];
+      for (const u of ordered) {
+        await loadCoinTech(u);
         await sleep(500);
+      }
+      /* Segundo pase: solo las monedas que quedaron sin velas, con espera
+         mayor, en vez de repetir toda la carga con Actualizar. */
+      const missing = UNIVERSE.filter((u) => !state.tech[u.id]);
+      for (const u of missing) {
+        await sleep(3000);
+        await loadCoinTech(u);
       }
       state.lastUpdated = new Date(); state.error = null;
       computeAll(); render(); loadNews();
