@@ -18,6 +18,7 @@ const UNIVERSE = [
   { id: "cardano", symbol: "ADA" },
   { id: "avalanche-2", symbol: "AVAX" },
   { id: "chainlink", symbol: "LINK" },
+  { id: "injective-protocol", symbol: "INJ" },
 ];
 
 const FNG_LABEL = {
@@ -175,7 +176,29 @@ if (typeof document !== "undefined") {
   const $ = (s) => document.querySelector(s);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let state = { markets: [], tech: {}, fng: null, signals: [], agents: [], loading: false, lastUpdated: null, error: null };
-  let chart = null;
+  let chart1 = null, chart2 = null;
+
+  /* Moneda de cada grafico: se recuerda en este navegador. El grafico 1
+     arranca en BTC (como antes) y el grafico 2 en INJ (el nuevo). */
+  function chartCoin(slot) {
+    const key = slot === 2 ? "dts_chart2" : "dts_chart1";
+    const fallback = slot === 2 ? "injective-protocol" : "bitcoin";
+    let saved = null;
+    try { saved = localStorage.getItem(key); } catch (e) {}
+    return UNIVERSE.some((u) => u.id === saved) ? saved : fallback;
+  }
+  function setChartCoin(slot, id) {
+    try { localStorage.setItem(slot === 2 ? "dts_chart2" : "dts_chart1", id); } catch (e) {}
+    renderCharts();
+  }
+  function populateChartSelects() {
+    [1, 2].forEach((slot) => {
+      const sel = $("#chartCoin" + slot); if (!sel) return;
+      sel.innerHTML = UNIVERSE.map((u) => `<option value="${u.id}">${u.symbol.toUpperCase()}/USDT</option>`).join("");
+      sel.value = chartCoin(slot);
+      sel.addEventListener("change", () => setChartCoin(slot, sel.value));
+    });
+  }
 
   async function fetchJSON(url, timeoutMs) {
     const ctrl = new AbortController();
@@ -307,17 +330,33 @@ if (typeof document !== "undefined") {
       }
     }
     if ($("#auditRows")) $("#auditRows").innerHTML = audit.slice().reverse().map((x) => `<tr><td>${esc(x.date)}</td><td><strong>${esc(x.symbol)}/USDT</strong></td><td>${fmtUSD(x.entry)}</td><td>${fmtUSD(x.current)}</td><td class="${(x.pnl || 0) >= 0 ? "positive" : "negative"}">${fmtPct(x.pnl)}</td></tr>`).join("") || '<tr><td colspan="5">Sin historial todavia.</td></tr>';
-    renderChart();
+    renderCharts();
   }
 
-  function renderChart() {
+  function drawChart(canvasId, coinId, slot) {
     if (!window.Chart) return;
-    const ctx = $("#marketChart"); if (!ctx) return;
-    const ohlc = state.tech.bitcoin ? state.tech.bitcoin.ohlc : null;
+    const ctx = $("#" + canvasId); if (!ctx) return;
+    const prev = slot === 2 ? chart2 : chart1;
+    if (prev) { prev.destroy(); if (slot === 2) chart2 = null; else chart1 = null; }
+    const coin = UNIVERSE.find((u) => u.id === coinId);
+    const kicker = $("#chartKicker" + slot);
+    if (kicker && coin) kicker.textContent = coin.symbol.toUpperCase() + " / USDT · VELAS 4H · 7 DIAS";
+    const tech = state.tech[coinId];
+    const ohlc = tech ? tech.ohlc : null;
     if (!ohlc) return;
     const values = ohlc.map((c) => c[4]);
-    if (chart) chart.destroy();
-    chart = new Chart(ctx, { type: "line", data: { labels: values.map((_, i) => i), datasets: [{ data: values, borderColor: "#63a5ff", backgroundColor: "rgba(91,156,255,.09)", fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false, grid: { display: false } }, y: { position: "right", grid: { color: "rgba(130,150,180,.10)" }, ticks: { color: "#71839b", font: { size: 9 }, callback: (v) => "$" + (v / 1000).toFixed(1) + "k" } } } } });
+    const max = Math.max.apply(null, values);
+    /* Eje adaptativo: BTC se lee en miles, INJ y similares en dolares. */
+    const tickFmt = (v) => max >= 1000 ? "$" + (v / 1000).toFixed(1) + "k" : max >= 1 ? "$" + v.toFixed(2) : "$" + v.toFixed(4);
+    const color = slot === 2 ? "#31d49a" : "#63a5ff";
+    const bg = slot === 2 ? "rgba(49,212,154,.09)" : "rgba(91,156,255,.09)";
+    const instance = new Chart(ctx, { type: "line", data: { labels: values.map((_, i) => i), datasets: [{ data: values, borderColor: color, backgroundColor: bg, fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false, grid: { display: false } }, y: { position: "right", grid: { color: "rgba(130,150,180,.10)" }, ticks: { color: "#71839b", font: { size: 9 }, callback: tickFmt } } } } });
+    if (slot === 2) chart2 = instance; else chart1 = instance;
+  }
+
+  function renderCharts() {
+    drawChart("marketChart", chartCoin(1), 1);
+    drawChart("marketChart2", chartCoin(2), 2);
   }
 
   async function loadNews() {
@@ -432,5 +471,6 @@ if (typeof document !== "undefined") {
   if ($("#capitalInput")) $("#capitalInput").value = s.capital;
   if ($("#riskInput")) $("#riskInput").value = s.riskPct;
   if ($("#newsKeyInput")) $("#newsKeyInput").value = s.newsKey;
+  populateChartSelects();
   loadAll();
 }

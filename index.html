@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3">
   <style>
     .live-badge{background:#15382f;color:#31d49a;font:9px 'DM Mono';padding:4px 7px;border-radius:5px}
     .error-banner{display:none;background:#3a1d24;border:1px solid #7a2e3a;color:#f3c2c9;border-radius:8px;padding:11px 13px;font-size:11px;line-height:1.6;margin-bottom:15px}
@@ -68,14 +68,15 @@
         <div class="view active" id="view-overview">
           <div class="metric-grid">
             <div class="metric-card"><div class="metric-label">BTC / USDT <span>₿</span></div><div class="metric-value" id="metricBtc">-</div><div class="metric-foot">Precio actual en USD (CoinGecko)</div></div>
-            <div class="metric-card"><div class="metric-label">Volumen 24h universo <span>▤</span></div><div class="metric-value" id="metricVolume">-</div><div class="metric-foot">Suma de los 9 activos monitoreados</div></div>
-            <div class="metric-card"><div class="metric-label">Activos en positivo 24h <span>↗</span></div><div class="metric-value" id="metricPositive">-</div><div class="metric-foot">De 9 activos monitoreados</div></div>
+            <div class="metric-card"><div class="metric-label">Volumen 24h universo <span>▤</span></div><div class="metric-value" id="metricVolume">-</div><div class="metric-foot">Suma de los 10 activos monitoreados</div></div>
+            <div class="metric-card"><div class="metric-label">Activos en positivo 24h <span>↗</span></div><div class="metric-value" id="metricPositive">-</div><div class="metric-foot">De 10 activos monitoreados</div></div>
             <div class="metric-card"><div class="metric-label">Miedo y Codicia <span>◉</span></div><div class="metric-value" id="metricFng">-</div><div class="metric-foot">Indice Alternative.me</div></div>
           </div>
           <div class="section-grid">
-            <div class="panel chart-panel"><div class="panel-header"><div><div class="panel-kicker">BTC / USDT · VELAS 4H · 7 DIAS</div><h2>Grafico real</h2></div><span class="live-badge">COIN-GECKO</span></div><div class="chart-wrap"><canvas id="marketChart"></canvas></div></div>
+            <div class="panel chart-panel"><div class="panel-header"><div><div class="panel-kicker" id="chartKicker1">BTC / USDT · VELAS 4H · 7 DIAS</div><h2>Grafico real</h2></div><select id="chartCoin1" class="chart-select" aria-label="Moneda del primer grafico"></select><span class="live-badge">COIN-GECKO</span></div><div class="chart-wrap"><canvas id="marketChart"></canvas></div></div>
             <div class="panel"><div class="panel-header"><div><div class="panel-kicker">TOP POR VOLUMEN</div><h2>Activos principales</h2></div><button class="button secondary" data-goto="scanner">Ver scanner</button></div><div class="table-wrap"><table><thead><tr><th>Activo</th><th>Precio</th><th>24h</th><th>Volumen</th><th>Score</th></tr></thead><tbody id="topAssets"></tbody></table></div></div>
           </div>
+          <div class="panel chart-panel"><div class="panel-header"><div><div class="panel-kicker" id="chartKicker2">INJ / USDT · VELAS 4H · 7 DIAS</div><h2>Grafico real 2</h2></div><select id="chartCoin2" class="chart-select" aria-label="Moneda del segundo grafico"></select><span class="live-badge">COIN-GECKO</span></div><div class="chart-wrap"><canvas id="marketChart2"></canvas></div></div>
         </div>
 
         <div class="view" id="view-scanner">
@@ -124,6 +125,6 @@
     </main>
   </div>
   <div class="toast" id="toast"></div>
-  <script src="app.js"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

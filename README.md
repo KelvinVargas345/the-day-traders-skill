@@ -5,7 +5,7 @@ Terminal web estatica con datos reales de mercado y nueve agentes con tareas con
 ## Que hace
 
 - **Dashboard:** precio de BTC, volumen 24h del universo, activos en positivo y el indice de Miedo y Codicia, con grafico real de BTC (velas 4h, 7 dias).
-- **Market scanner:** 9 activos (BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX, LINK) filtrados por volumen 24h, con rango 24h, RSI y tendencia frente a la EMA20.
+- **Market scanner:** 10 activos (BTC, ETH, SOL, BNB, XRP, DOGE, ADA, AVAX, LINK, INJ) filtrados por volumen 24h, con rango 24h, RSI y tendencia frente a la EMA20.
 - **Senales:** solo son CONFIRMADA con 4/4 condiciones objetivas: precio sobre EMA20, RSI 40-70, MACD sobre su senal y volumen sobre la mediana del universo.
 - **Agentes:**
   1. Crypto Scanner: filtra por volumen real y ordena por volumen.
